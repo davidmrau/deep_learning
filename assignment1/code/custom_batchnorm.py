@@ -111,15 +111,15 @@ class CustomBatchNormManualFunction(torch.autograd.Function):
       For the case that you make use of torch.var be aware that the flag unbiased=False should be set.
     """
 
-    #ctx.constant =
-    var = input.var(0,unbiased=True)
-    root_var = (var + eps).sqrt()
+    #ctx.constant ==
+    var = input.var(0,unbiased=False)
+    root_var = torch.sqrt(var + eps)
     xmu = input - input.mean(0)
     n_var = 1/root_var
     xhat = xmu * n_var
     out = gamma * xhat + beta
     ctx.eps = eps
-    ctx.save_for_backward(xhat, gamma, xmu, n_var, root_var, var)
+    ctx.save_for_backward(xhat, n_var, gamma)
     return out
 
 
@@ -140,7 +140,7 @@ class CustomBatchNormManualFunction(torch.autograd.Function):
       inputs to None. This should be decided dynamically.
     """
     # retrieve tensors from forwardpass
-    xhat, gamma, xmu, n_var, root_var, var = ctx.saved_tensors
+    xhat, n_var, gamma = ctx.saved_tensors
     eps = ctx.eps
     # set all gradients to none
     grad_input = grad_gamma = grad_beta =  None
@@ -154,11 +154,8 @@ class CustomBatchNormManualFunction(torch.autograd.Function):
     if ctx.needs_input_grad[1]:
         grad_gamma = (xhat*grad_output).sum(0)
     # gradient with respect to beta
-    if ctx.needs_input_grad[2]:
-        pass
-
-
-
+    if ctx.needs_input_grad[0] and ctx.needs_input_grad[1] and ctx.needs_input_grad[2]:
+        grad_input = (gamma*n_var/N) * (N*grad_output - xhat*grad_gamma - grad_beta)
 
     # return gradients of the three tensor inputs and None for the constant eps
     return grad_input, grad_gamma, grad_beta, None
@@ -190,7 +187,7 @@ class CustomBatchNormManualModule(nn.Module):
     """
     super(CustomBatchNormManualModule, self).__init__()
     self.n_neurons = n_neurons
-    self.eps = eps
+    self.eps = torch.autograd.Variable(torch.Tensor([eps]))
     self.gamma = nn.Parameter(torch.ones(n_neurons))
     self.beta = nn.Parameter(torch.zeros(n_neurons))
 
@@ -210,7 +207,7 @@ class CustomBatchNormManualModule(nn.Module):
       Call it via its .apply() method.
     """
 
-    print(self.gamma.requires_grad, self.beta.requires_grad, self.eps.requires_grad, self.input.requires_grad )
+    #print(self.gamma.requires_grad, self.beta.requires_grad, self.eps.requires_grad, self.input.requires_grad )
 
     if len(input.shape) != 2:
         raise ValueError('Only supports dense')
@@ -218,10 +215,6 @@ class CustomBatchNormManualModule(nn.Module):
         raise ValueError('Wrong input size (%i). Should be (%i).' % (input.shape[1],self.n_neurons))
 
     fct = CustomBatchNormManualFunction()
-
-    # gradient check
-    #assert(torch.autograd.gradcheck(fct, input))
-
     out = fct.apply(input, self.gamma, self.beta)
 
     return out
