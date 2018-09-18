@@ -119,13 +119,12 @@ def train():
   # plot accuracies and losses
   plt.subplot(2, 1, 1)
   plt.plot(np.arange(len(accuracies)*FLAGS.eval_freq,step=FLAGS.eval_freq), accuracies, 'o-')
-  plt.title('Numpy MLP')
   plt.ylabel('Accuracy (%)')
 
   plt.subplot(2, 1, 2)
   plt.plot(np.arange(len(losses)), losses)
-  plt.xlabel('Step')
-  plt.ylabel('Cross Entropy Loss')
+  plt.xlabel('Epoch')
+  plt.ylabel('Loss')
 
   plt.savefig('numpy_mlp.png')
 def print_flags():

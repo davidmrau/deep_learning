@@ -101,9 +101,8 @@ def train():
   net = MLP(in_size, dnn_hidden_units, out_size, FLAGS.batch_norm, FLAGS.dropout).to(device)
 
 
-# initialize l1 loss
-  l1_crit = nn.L1Loss(size_average=False)
-  factor_l1 = 0.0005
+# initialize l1 regularization
+  reg_factor = 1e-6
 
   # intialize loss function
   criterion = nn.CrossEntropyLoss()
@@ -123,12 +122,11 @@ def train():
     loss = criterion(y, t)
 
     if FLAGS.l1:
-        for param in net.parameters():
-            if isinstance(param, nn.Linear):
-                reg_loss += l1_crit(param)
-        loss += factor_l1 * loss
-    losses.append(loss)
-
+        l1_loss = torch.autograd.Variable(torch.FloatTensor(1), requires_grad=True)
+        for name, param in net.named_parameters():
+            if 'bias' not in name and isinstance(param, nn.Linear):
+                loss = loss + (reg_factor * torch.sum(torch.abs(param)))
+    losses.append(loss.cpu().detach().numpy())
 
     # Backward and optimize
     optimizer.zero_grad()
@@ -151,21 +149,6 @@ def train():
   pickle.dump(save_acc, open(acc_name.replace('.', '_')+'.p', 'wb'))
   pickle.dump(save_losses, open(loss_name.replace('.', '_')+'.p', 'wb'))
 
-
-
-
-  # plot accuracies and losses
-  # plt.subplot(2, 1, 1)
-  # plt.plot(np.arange(len(accuracies)*FLAGS.eval_freq,step=FLAGS.eval_freq), accuracies, 'o-')
-  # plt.title('Pytorch MLP')
-  # plt.ylabel('Accuracy (%)')
-  #
-  # plt.subplot(2, 1, 2)
-  # plt.plot(np.arange(len(losses)), losses)
-  # plt.xlabel('Step')
-  # plt.ylabel('Cross Entropy Loss')
-  #
-  # plt.savefig('pytorch_mlp.png')
 def print_flags():
   """
   Prints all entries in FLAGS variable.

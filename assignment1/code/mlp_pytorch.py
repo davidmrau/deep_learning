@@ -42,15 +42,15 @@ class MLP(nn.Module):
     if len(n_hidden) > 0:
         for n in range(len(n_hidden)):
             if batch_norm:
-                self.modules.append(CustomBatchNormAutograd(prev_size,0.00001))
+                self.modules.append(CustomBatchNormAutograd(prev_size,0.0001))
             self.modules.append(nn.Linear(prev_size, n_hidden[n]))
             prev_size = n_hidden[n]
     if batch_norm:
-        self.modules.append(CustomBatchNormAutograd(prev_size,0.00001))
+        self.modules.append(CustomBatchNormAutograd(prev_size,0.0001))
     self.modules.append(nn.Linear(prev_size, n_classes))
 
     self.relu = nn.ReLU()
-    self.linears = nn.ModuleList(self.modules)
+    self.layers = nn.ModuleList(self.modules)
     self.dropout = nn.Dropout(.2)
     self.use_dropout = use_dropout
 
@@ -69,14 +69,13 @@ class MLP(nn.Module):
     """
 
     out = x
-    for i,m in enumerate(self.linears):
-        if isinstance(m, CustomBatchNormAutograd) or i != len(self.linears):
+    for i,m in enumerate(self.layers):
+        # if not last layer
+        if i == len(self.layers)-1 or isinstance(m, CustomBatchNormAutograd):
             out = m(out)
-        else:
-            # if not last layer
-            if i != len(self.linears):
-                out = m(out)
-                out = self.relu(out)
-                if self.use_dropout:
-                    out = self.dropout(out)
+        elif i != len(self.layers):
+            out = m(out)
+            out = self.relu(out)
+            if self.use_dropout:
+                out = self.dropout(out)
     return out
