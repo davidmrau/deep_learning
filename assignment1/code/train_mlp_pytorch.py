@@ -21,7 +21,7 @@ import pickle
 # Default constants
 DNN_HIDDEN_UNITS_DEFAULT = '100'
 LEARNING_RATE_DEFAULT = 2e-3
-MAX_STEPS_DEFAULT = 3500
+MAX_STEPS_DEFAULT = 1500
 BATCH_SIZE_DEFAULT = 200
 EVAL_FREQ_DEFAULT = 100
 
@@ -142,12 +142,12 @@ def train():
         print('loss at step',s,': ',loss.cpu().detach().numpy())
         accuracies.append(acc*100)
 
-  save_acc = np.arange(len(accuracies)*FLAGS.eval_freq,step=FLAGS.eval_freq), accuracies
-  save_losses = np.arange(len(losses)), losses
-  acc_name = 'accuracies_lr_{}_l1_{}_batch_norm_{}_dropout_{}_h_{}'.format(FLAGS.learning_rate, FLAGS.l1, FLAGS.batch_norm,FLAGS.dropout, FLAGS.dnn_hidden_units)
-  loss_name = 'losses_lr_{}_l1_{}_batch_norm_{}_dropout_{}_h_{}'.format(FLAGS.learning_rate, FLAGS.l1, FLAGS.batch_norm,FLAGS.dropout, FLAGS.dnn_hidden_units)
-  pickle.dump(save_acc, open(acc_name.replace('.', '_')+'.p', 'wb'))
-  pickle.dump(save_losses, open(loss_name.replace('.', '_')+'.p', 'wb'))
+  # save_acc = np.arange(len(accuracies)*FLAGS.eval_freq,step=FLAGS.eval_freq), accuracies
+  # save_losses = np.arange(len(losses)), losses
+  # acc_name = 'accuracies_lr_{}_l1_{}_batch_norm_{}_dropout_{}_h_{}'.format(FLAGS.learning_rate, FLAGS.l1, FLAGS.batch_norm,FLAGS.dropout, FLAGS.dnn_hidden_units)
+  # loss_name = 'losses_lr_{}_l1_{}_batch_norm_{}_dropout_{}_h_{}'.format(FLAGS.learning_rate, FLAGS.l1, FLAGS.batch_norm,FLAGS.dropout, FLAGS.dnn_hidden_units)
+  # pickle.dump(save_acc, open(acc_name.replace('.', '_')+'.p', 'wb'))
+  # pickle.dump(save_losses, open(loss_name.replace('.', '_')+'.p', 'wb'))
 
 def print_flags():
   """

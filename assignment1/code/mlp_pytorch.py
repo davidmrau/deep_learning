@@ -41,12 +41,8 @@ class MLP(nn.Module):
     prev_size = n_inputs
     if len(n_hidden) > 0:
         for n in range(len(n_hidden)):
-            if batch_norm:
-                self.modules.append(CustomBatchNormAutograd(prev_size,0.0001))
             self.modules.append(nn.Linear(prev_size, n_hidden[n]))
             prev_size = n_hidden[n]
-    if batch_norm:
-        self.modules.append(CustomBatchNormAutograd(prev_size,0.0001))
     self.modules.append(nn.Linear(prev_size, n_classes))
 
     self.relu = nn.ReLU()
@@ -71,9 +67,9 @@ class MLP(nn.Module):
     out = x
     for i,m in enumerate(self.layers):
         # if not last layer
-        if i == len(self.layers)-1 or isinstance(m, CustomBatchNormAutograd):
+        if (i == len(self.layers) - 1):
             out = m(out)
-        elif i != len(self.layers):
+        else:
             out = m(out)
             out = self.relu(out)
             if self.use_dropout:

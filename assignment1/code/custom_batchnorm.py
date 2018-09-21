@@ -154,6 +154,10 @@ class CustomBatchNormManualFunction(torch.autograd.Function):
     if ctx.needs_input_grad[1]:
         grad_gamma = (xhat*grad_output).sum(0)
     # gradient with respect to beta
+
+    # making use of this trick
+    # https://kevinzakka.github.io/2016/09/14/batch_normalization/
+    # simplifying the equation to
     if ctx.needs_input_grad[0] and ctx.needs_input_grad[1] and ctx.needs_input_grad[2]:
         grad_input = (gamma*n_var/N) * (N*grad_output - xhat*grad_gamma - grad_beta)
 

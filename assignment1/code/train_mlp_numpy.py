@@ -116,17 +116,17 @@ def train():
         print('accuracy at step',s,': ',acc)
         accuracies.append(acc*100)
 
-  # plot accuracies and losses
-  plt.subplot(2, 1, 1)
-  plt.plot(np.arange(len(accuracies)*FLAGS.eval_freq,step=FLAGS.eval_freq), accuracies, 'o-')
-  plt.ylabel('Accuracy (%)')
-
-  plt.subplot(2, 1, 2)
-  plt.plot(np.arange(len(losses)), losses)
-  plt.xlabel('Epoch')
-  plt.ylabel('Loss')
-
-  plt.savefig('numpy_mlp.png')
+  # # plot accuracies and losses
+  # plt.subplot(2, 1, 1)
+  # plt.plot(np.arange(len(accuracies)*FLAGS.eval_freq,step=FLAGS.eval_freq), accuracies, 'o-')
+  # plt.ylabel('Accuracy (%)')
+  #
+  # plt.subplot(2, 1, 2)
+  # plt.plot(np.arange(len(losses)), losses)
+  # plt.xlabel('Epoch')
+  # plt.ylabel('Loss')
+  #
+  # plt.savefig('numpy_mlp.png')
 def print_flags():
   """
   Prints all entries in FLAGS variable.

@@ -61,7 +61,7 @@ def train():
   ### DO NOT CHANGE SEEDS!
   # Set the random seeds for reproducibility
   np.random.seed(42)
-  torch.manual_seed(42) 
+  torch.manual_seed(42)
   # Device configuration
   use_cuda = torch.cuda.is_available()
   if use_cuda:
@@ -114,10 +114,10 @@ def train():
         accuracies.append(acc)
         print('accuracy at step',s,': ',acc)
 
-  save_acc = np.arange(len(accuracies)*FLAGS.eval_freq,step=FLAGS.eval_freq), accuracies
-  save_losses = np.arange(len(losses)), losses
-  pickle.dump(save_acc, open('accuracies.p', 'wb'))
-  pickle.dump(save_losses, open('losses.p', 'wb'))
+  # save_acc = np.arange(len(accuracies)*FLAGS.eval_freq,step=FLAGS.eval_freq), accuracies
+  # save_losses = np.arange(len(losses)), losses
+  # pickle.dump(save_acc, open('accuracies.p', 'wb'))
+  # pickle.dump(save_losses, open('losses.p', 'wb'))
 def print_flags():
   """
   Prints all entries in FLAGS variable.
