@@ -38,12 +38,12 @@ class VanillaRNN(nn.Module):
         self.seq_length = seq_length
         self.num_hidden = num_hidden
         self.batch_size = batch_size
-
+        self.device = device
     def forward(self, x):
         # Implementation here ...
         out = []
         #x # (b, i)
-        h_prev = torch.zeros(self.num_hidden, self.batch_size)
+        h_prev = torch.zeros(self.num_hidden, self.batch_size, device=self.device)
         for t in range(x.shape[1]):
             # self.Whx @ x[:,t]: (h, i) (b,i)T = (h, b)
             # self.Whh @ h_prev: (h,h) (h,b) + (b) = (h,b)

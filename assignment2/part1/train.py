@@ -22,7 +22,7 @@ import argparse
 import time
 from datetime import datetime
 import numpy as np
-
+import pickle
 import torch
 from torch.utils.data import DataLoader
 
@@ -47,11 +47,11 @@ def train(config):
 
     # Initialize the device which to run the model on
     device = torch.device(config.device)
-
+    print('Running on {}'.format(device))
     # Initialize the model that we are going to use
     if config.model_type is 'RNN':
-        model = VanillaRNN(config.input_length, config.input_dim, config.num_hidden, config.num_classes, config.batch_size)
-
+        model = VanillaRNN(config.input_length, config.input_dim, config.num_hidden, config.num_classes, config.batch_size, device)
+    
     # Initialize the dataset and data loader (note the +1)
     dataset = PalindromeDataset(config.input_length+1)
     data_loader = DataLoader(dataset, config.batch_size, num_workers=1)
@@ -60,13 +60,13 @@ def train(config):
     optimizer = torch.optim.RMSprop(model.parameters(), config.learning_rate)
     criterion = torch.nn.CrossEntropyLoss()
 
+    accuracies = []
     for step, (batch_inputs, batch_targets) in enumerate(data_loader):
 
         # Only for time measurement of step through network
         t1 = time.time()
-
-        y_pred_batch = model(batch_inputs)
-        loss = criterion(y_pred_batch, batch_targets)
+        y_pred_batch = model(batch_inputs.to(device))
+        loss = criterion(y_pred_batch, batch_targets.to(device))
         loss.backward()
         ############################################################################
         # QUESTION: what happens here and why?
@@ -84,23 +84,22 @@ def train(config):
         t2 = time.time()
         examples_per_second = config.batch_size/float(t2-t1)
 
-        if step % 10 == 0:
+        accuracies.append(accuracy)
+        #if step % 10 == 0:
 
-            print("[{}] Train Step {:04d}/{:04d}, Batch Size = {}, Examples/Sec = {:.2f}, "
-                  "Accuracy = {:.2f}, Loss = {:.3f}".format(
-                    datetime.now().strftime("%Y-%m-%d %H:%M"), step,
-                    config.train_steps, config.batch_size, examples_per_second,
-                    accuracy, loss
-            ))
-
+            #print("[{}] Train Step {:04d}/{:04d}, Batch Size = {}, Examples/Sec = {:.2f}, "
+            #      "Accuracy = {:.2f}, Loss = {:.3f}".format(
+            #        datetime.now().strftime("%Y-%m-%d %H:%M"), step,
+            #        config.train_steps, config.batch_size, examples_per_second,
+            #        accuracy, loss
+            #))
         if step == config.train_steps:
             # If you receive a PyTorch data-loader error, check this bug report:
             # https://github.com/pytorch/pytorch/pull/9655
             break
 
     print('Done training.')
-
-
+    print("Length {} max. accuracy: {}".format(config.input_length, max(accuracies)))
  ################################################################################
  ################################################################################
 
