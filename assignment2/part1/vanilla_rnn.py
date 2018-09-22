@@ -48,8 +48,8 @@ class VanillaRNN(nn.Module):
             # self.Whx @ x[:,t]: (h, i) (b,i)T = (h, b)
             # self.Whh @ h_prev: (h,h) (h,b) + (b) = (h,b)
             # h = (h,b)  (h,b) + (b)
-            h = nn.functional.tanh(self.Whx @ x[:,t].view(1,-1) + self.Whh @ h_prev + self.bh)
+            h = torch.tanh(self.Whx @ x[:,t].view(1,-1) + self.Whh @ h_prev + self.bh)
             h_prev = h
-        out =  h.transpose(1,0) @ self.Wph.transpose(1,0) + self.bp # (h, b)T (o, h)T  + (o) = (b, o)
+        last_out =  h.transpose(1,0) @ self.Wph.transpose(1,0) + self.bp # (h, b)T (o, h)T  + (o) = (b, o)
 
-        return out
+        return last_out
