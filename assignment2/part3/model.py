@@ -30,17 +30,15 @@ class TextGenerationModel(nn.Module):
         self.lstm_num_hidden = lstm_num_hidden
         self.lstm_num_layers = lstm_num_layers
         self.batch_size = batch_size
-        self.embedding = nn.Embedding(vocabulary_size,lstm_num_hidden)
-        self.lstm = nn.LSTM(lstm_num_hidden, lstm_num_hidden, lstm_num_layers)
+        self.lstm = nn.LSTM(vocabulary_size, lstm_num_hidden, lstm_num_layers, batch_first=True)
         self.linear = nn.Linear(lstm_num_hidden, vocabulary_size)
-        self.dropout = nn.Dropout(dropout_keep_prob)
+        self.dropout = nn.Dropout(1-dropout_keep_prob)
 
     def forward(self, x, h=None):
-        embeds = self.embedding(x)
         if h:
-            lstm_out, hidden = self.lstm(embeds, h)
+            lstm_out, hidden = self.lstm(x, h)
         else:
-            lstm_out, hidden = self.lstm(embeds)
+            lstm_out, hidden = self.lstm(x)
         out = self.linear(lstm_out)
         out = self.dropout(out)
-        return out
+        return out, hidden
