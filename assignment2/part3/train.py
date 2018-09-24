@@ -48,14 +48,14 @@ def train(config):
         device = torch.device('cpu')
     # Initialize the device which to run the model on
     device = torch.device(device)
-
+    dtype = torch.cuda.LongTensor if use_cuda else torch.LongTensor
     # Initialize the dataset and data loader (note the +1)
     dataset = TextDataset(config.txt_file, config.seq_length)
     data_loader = DataLoader(dataset, config.batch_size, num_workers=1)
 
     # Initialize the model that we are going to use
     model = TextGenerationModel(config.batch_size, config.seq_length, dataset.vocab_size, \
-                 config.lstm_num_hidden, config.lstm_num_layers, device)
+                 config.lstm_num_hidden, config.lstm_num_layers, device).to(device)
     # Setup the loss and optimizer
 
     criterion = torch.nn.CrossEntropyLoss()
@@ -67,7 +67,7 @@ def train(config):
         t1 = time.time()
 
 
-        y_pred_batch = model(batch_inputs.to(device))
+        y_pred_batch = model(batch_inputs.type(dtype))
         # get argmax
         y_pred_batch_idx = y_pred_batch.argmax(2)
         # initialize one hot
@@ -99,12 +99,12 @@ def train(config):
                    accuracy, loss
             ))
 
-        if step == 5:
+        if step % config.sample_every == 0 :
             # Generate some sentences by sampling from the model
             model.eval()
             print('Evaluating: ')
             rand_chars = [dataset._char_to_ix[random.choice(dataset._chars)] for i in range(4)]
-            prev_pred = torch.Tensor(rand_chars).to(device)
+            prev_pred = torch.Tensor(rand_chars).type(dtype)
             prev_pred = prev_pred.unsqueeze(0)
             predictions = []
             for i in range(config.seq_length):
