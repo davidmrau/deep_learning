@@ -52,16 +52,19 @@ def train(config):
     # Initialize the dataset and data loader (note the +1)
     dataset = TextDataset(config.txt_file, config.seq_length)
     data_loader = DataLoader(dataset, config.batch_size, num_workers=1)
-
     # Initialize the model that we are going to use
     model = TextGenerationModel(config.batch_size, config.seq_length, dataset.vocab_size, \
-                 config.lstm_num_hidden, config.lstm_num_layers, device).to(device)
+                 config.lstm_num_hidden, config.dropout_keep_prob, config.lstm_num_layers)
     # Setup the loss and optimizer
 
     criterion = torch.nn.CrossEntropyLoss()
     optimizer = torch.optim.RMSprop(model.parameters(), config.learning_rate)
 
+    lr = config.learning_rate
     for step, (batch_inputs, batch_targets) in enumerate(data_loader):
+
+
+
         model.train()
         # Only for time measurement of step through network
         t1 = time.time()
@@ -119,7 +122,12 @@ def train(config):
             # If you receive a PyTorch data-loader error, check this bug report:
             # https://github.com/pytorch/pytorch/pull/9655
             break
-
+        # adapt learning rate
+        if step % config.learning_rate_step is 0 and step is not 0:
+            lr = lr*config.learning_rate_decay
+            print('Learning rate decreased: {}'.format(lr))
+            for param_group in optimizer.param_groups:
+                param_group['lr'] = lr
     print('Done training.')
 
 
@@ -143,7 +151,7 @@ if __name__ == "__main__":
 
     # It is not necessary to implement the following three params, but it may help training.
     parser.add_argument('--learning_rate_decay', type=float, default=0.96, help='Learning rate decay fraction')
-    parser.add_argument('--learning_rate_step', type=int, default=5000, help='Learning rate step')
+    parser.add_argument('--learning_rate_step', type=int, default=50, help='Learning rate step')
     parser.add_argument('--dropout_keep_prob', type=float, default=1.0, help='Dropout keep probability')
 
     parser.add_argument('--train_steps', type=int, default=1e6, help='Number of training steps')

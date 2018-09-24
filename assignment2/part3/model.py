@@ -23,8 +23,8 @@ import torch
 
 class TextGenerationModel(nn.Module):
 
-    def __init__(self, batch_size, seq_length, vocabulary_size,
-                 lstm_num_hidden=256, lstm_num_layers=2, device='cuda:0'):
+    def __init__(self, batch_size, seq_length, vocabulary_size, \
+                 lstm_num_hidden=256, dropout_keep_prob=1, lstm_num_layers=2):
 
         super(TextGenerationModel, self).__init__()
         self.lstm_num_hidden = lstm_num_hidden
@@ -32,10 +32,15 @@ class TextGenerationModel(nn.Module):
         self.batch_size = batch_size
         self.embedding = nn.Embedding(vocabulary_size,lstm_num_hidden)
         self.lstm = nn.LSTM(lstm_num_hidden, lstm_num_hidden, lstm_num_layers)
-        self.out = nn.Linear(lstm_num_hidden, vocabulary_size)
+        self.linear = nn.Linear(lstm_num_hidden, vocabulary_size)
+        self.dropout = nn.Dropout(dropout_keep_prob)
 
-    def forward(self, x):
+    def forward(self, x, h=None):
         embeds = self.embedding(x)
-        lstm_out, hidden = self.lstm(embeds)
-        out = self.out(lstm_out)
+        if h:
+            lstm_out, hidden = self.lstm(embeds, h)
+        else:
+            lstm_out, hidden = self.lstm(embeds)
+        out = self.linear(lstm_out)
+        out = self.dropout(out)
         return out
