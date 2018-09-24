@@ -35,21 +35,16 @@ class VanillaRNN(nn.Module):
         # add output layer
         self.Wph = nn.Parameter(torch.randn((num_classes, num_hidden), device=device, requires_grad=True) )
         self.bp = nn.Parameter(torch.randn((num_classes), device=device, requires_grad=True))
-        self.seq_length = seq_length
-        self.num_hidden = num_hidden
-        self.batch_size = batch_size
-        self.device = device
+
+        self.h_prev = torch.zeros(self.num_hidden, self.batch_size, device=self.device)
     def forward(self, x):
-        # Implementation here ...
-        out = []
         #x # (b, i)
-        h_prev = torch.zeros(self.num_hidden, self.batch_size, device=self.device)
         for t in range(x.shape[1]):
             # self.Whx @ x[:,t]: (h, i) (b,i)T = (h, b)
             # self.Whh @ h_prev: (h,h) (h,b) + (b) = (h,b)
             # h = (h,b)  (h,b) + (b)
-            h = torch.tanh(self.Whx @ x[:,t].view(1,-1) + self.Whh @ h_prev + self.bh)
-            h_prev = h
+            h = torch.tanh(self.Whx @ x[:,t].view(1,-1) + self.Whh @ self.h_prev + self.bh)
+            self.h_prev = h
         last_out =  h.transpose(1,0) @ self.Wph.transpose(1,0) + self.bp # (h, b)T (o, h)T  + (o) = (b, o)
 
         return last_out

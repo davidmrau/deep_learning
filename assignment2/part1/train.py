@@ -26,16 +26,10 @@ import pickle
 import torch
 from torch.utils.data import DataLoader
 
-#### original
-# from part1.dataset import PalindromeDataset
-# from part1.vanilla_rnn import VanillaRNN
-# from part1.lstm import LSTM
-### changed
-from dataset import PalindromeDataset
-from vanilla_rnn import VanillaRNN
-from lstm import LSTM
+from part1.dataset import PalindromeDataset
+from part1.vanilla_rnn import VanillaRNN
+from part1.lstm import LSTM
 
-###
 # You may want to look into tensorboardX for logging
 # from tensorboardX import SummaryWriter
 

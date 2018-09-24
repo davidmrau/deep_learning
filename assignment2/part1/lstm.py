@@ -28,11 +28,6 @@ class LSTM(nn.Module):
     def __init__(self, seq_length, input_dim, num_hidden, num_classes, batch_size, device='cpu'):
         super(LSTM, self).__init__()
 
-        self.device = device
-        self.seq_length = seq_length
-        self.batch_size = batch_size
-        self.num_hidden = num_hidden
-
         def init_param(shape):
             return nn.Parameter(torch.randn(shape, device=self.device, requires_grad=True ))
 
@@ -50,21 +45,22 @@ class LSTM(nn.Module):
         self.bo = init_param((num_hidden,1))
         self.Wph = init_param((num_classes, num_hidden))
         self.bp = init_param((num_classes,1))
-
+        
+        self.h_prev = torch.zeros(self.num_hidden, self.batch_size, device=self.device) # (h, b)
+        self.c_prev = torch.zeros(self.num_hidden, self.batch_size, device=self.device)
     def forward(self, x):
 
-        h_prev = torch.zeros(self.num_hidden, self.batch_size, device=self.device) # (h, b)
-        c_prev = torch.zeros(self.num_hidden, self.batch_size, device=self.device)
+
         for t in range(x.shape[1]):
             x_t = x[:,t].view(1,-1)
-            g = torch.tanh(self.Wgx @  x_t + self.Wgh @ h_prev + self.bg)
-            i = nn.functional.sigmoid(self.Wix @  x_t + self.Wih @ h_prev + self.bi)
-            f = nn.functional.sigmoid(self.Wfx @  x_t + self.Wfh @ h_prev + self.bf)
-            o = nn.functional.sigmoid(self.Wox @  x_t + self.Woh @ h_prev + self.bo)
-            c = g * i + c_prev * f
+            g = torch.tanh(self.Wgx @  x_t + self.Wgh @ self.h_prev + self.bg)
+            i = nn.functional.sigmoid(self.Wix @  x_t + self.Wih @ self.h_prev + self.bi)
+            f = nn.functional.sigmoid(self.Wfx @  x_t + self.Wfh @ self.h_prev + self.bf)
+            o = nn.functional.sigmoid(self.Wox @  x_t + self.Woh @ self.h_prev + self.bo)
+            c = g * i + self.c_prev * f
             h = torch.tanh(c) * o
-            c_prev = c
-            h_prev = h
+            self.c_prev = c
+            self.h_prev = h
 
         last_out = (self.Wph @ h + self.bp).transpose(1,0)
         return last_out

@@ -21,63 +21,100 @@ import os
 import time
 from datetime import datetime
 import argparse
-
+import random
 import numpy as np
 
 import torch
 import torch.optim as optim
 from torch.utils.data import DataLoader
+# original
+# TODO: Change this back
+# from part3.dataset import TextDataset
+# from part3.model import TextGenerationModel
+# changed
+from dataset import TextDataset
+from model import TextGenerationModel
+#
 
-from part3.dataset import TextDataset
-from part3.model import TextGenerationModel
+#
 
 ################################################################################
 
 def train(config):
-
+    use_cuda = torch.cuda.is_available()
+    if use_cuda:
+        device = torch.device('cuda:0')
+    else:
+        device = torch.device('cpu')
     # Initialize the device which to run the model on
-    device = torch.device(config.device)
-
-    # Initialize the model that we are going to use
-    model = TextGenerationModel( ... )  # fixme
+    device = torch.device(device)
 
     # Initialize the dataset and data loader (note the +1)
-    dataset = TextDataset( ... )  # fixme
+    dataset = TextDataset(config.txt_file, config.seq_length)
     data_loader = DataLoader(dataset, config.batch_size, num_workers=1)
 
+    # Initialize the model that we are going to use
+    model = TextGenerationModel(config.batch_size, config.seq_length, dataset.vocab_size, \
+                 config.lstm_num_hidden, config.lstm_num_layers, device)
     # Setup the loss and optimizer
-    criterion = None  # fixme
-    optimizer = None  # fixme
+
+    criterion = torch.nn.CrossEntropyLoss()
+    optimizer = torch.optim.RMSprop(model.parameters(), config.learning_rate)
 
     for step, (batch_inputs, batch_targets) in enumerate(data_loader):
-
+        model.train()
         # Only for time measurement of step through network
         t1 = time.time()
 
-        #######################################################
-        # Add more code here ...
-        #######################################################
 
-        loss = np.inf   # fixme
-        accuracy = 0.0  # fixme
+        y_pred_batch = model(batch_inputs.to(device))
+        # get argmax
+        y_pred_batch_idx = y_pred_batch.argmax(2)
+        # initialize one hot
+        y_pred_one_hot = torch.zeros_like(y_pred_batch)
+        # copy indices into one hot with 1
+        y_pred_one_hot = y_pred_one_hot.scatter(2, torch.unsqueeze(y_pred_batch_idx,2), 1).float()
+        # merge batch and seq length
+        y_pred_one_hot = y_pred_one_hot.view(-1,dataset.vocab_size)
+        # merge batch and seq length
+        batch_targets = batch_targets.view(-1)
 
+        loss = criterion(torch.autograd.Variable(y_pred_one_hot, requires_grad=True), batch_targets.to(device))
+        loss.backward()
+
+        optimizer.step()
+        optimizer.zero_grad()
+        loss = loss.item()
+        accuracy = np.sum(np.argmax(y_pred_one_hot.cpu().detach().numpy(), axis=1) == batch_targets.cpu().detach().numpy())/batch_targets.shape[0]
         # Just for time measurement
         t2 = time.time()
         examples_per_second = config.batch_size/float(t2-t1)
-
+        config.train_steps = int(config.train_steps)
         if step % config.print_every == 0:
 
             print("[{}] Train Step {:04d}/{:04d}, Batch Size = {}, Examples/Sec = {:.2f}, "
-                  "Accuracy = {:.2f}, Loss = {:.3f}".format(
-                    datetime.now().strftime("%Y-%m-%d %H:%M"), step,
-                    config.train_steps, config.batch_size, examples_per_second,
-                    accuracy, loss
+                 "Accuracy = {:.2f}, Loss = {:.3f}".format(
+                   datetime.now().strftime("%Y-%m-%d %H:%M"), step,
+                   config.train_steps, config.batch_size, examples_per_second,
+                   accuracy, loss
             ))
 
-        if step == config.sample_every:
+        if step == 5:
             # Generate some sentences by sampling from the model
-            pass
-
+            model.eval()
+            print('Evaluating: ')
+            rand_chars = [dataset._char_to_ix[random.choice(dataset._chars)] for i in range(4)]
+            prev_pred = torch.Tensor(rand_chars).to(device)
+            prev_pred = prev_pred.unsqueeze(0)
+            predictions = []
+            for i in range(config.seq_length):
+                y_pred = model(prev_pred.long())
+                # get argmax
+                y_pred_batch_idx = y_pred.argmax(2)
+                prev_pred = y_pred_batch_idx
+                predictions.append(y_pred_batch_idx.squeeze().cpu().detach().numpy())
+            predictions = np.asarray(predictions).T
+            print([dataset.convert_to_string(pred) for pred in list(predictions)])
         if step == config.train_steps:
             # If you receive a PyTorch data-loader error, check this bug report:
             # https://github.com/pytorch/pytorch/pull/9655
