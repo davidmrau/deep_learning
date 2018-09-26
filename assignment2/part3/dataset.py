@@ -20,6 +20,7 @@ from __future__ import print_function
 import os
 import numpy as np
 import torch.utils.data as data
+import re
 
 
 class TextDataset(data.Dataset):
@@ -27,7 +28,7 @@ class TextDataset(data.Dataset):
     def __init__(self, filename, seq_length):
         assert os.path.splitext(filename)[1] == ".txt"
         self._seq_length = seq_length
-        self._data = open(filename, 'r').read()
+        self._data = re.sub('\s+',' ',open(filename, 'r').read())
         self._chars = list(set(self._data))
         self._data_size, self._vocab_size = len(self._data), len(self._chars)
         print("Initialize dataset with {} characters, {} unique.".format(

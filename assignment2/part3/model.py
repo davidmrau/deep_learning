@@ -39,6 +39,6 @@ class TextGenerationModel(nn.Module):
             lstm_out, hidden = self.lstm(x, h)
         else:
             lstm_out, hidden = self.lstm(x)
-        out = self.linear(lstm_out)
-        out = self.dropout(out)
+        out = self.dropout(lstm_out)
+        out = self.linear(out)
         return out, hidden
