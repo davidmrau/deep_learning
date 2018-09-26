@@ -56,6 +56,7 @@ def train(config):
     dtype = torch.cuda.LongTensor if use_cuda else torch.LongTensor
     # Initialize the dataset and data loader (note the +1)
     dataset = TextDataset(config.txt_file, config.seq_length)
+    pickle.dump(dataset, open(config.save_path+'/dataset.p', 'wb'))
     data_loader = DataLoader(dataset, config.batch_size, num_workers=0)
     # Initialize the model that we are going to use
     model = TextGenerationModel(config.batch_size, config.seq_length, dataset.vocab_size, \
@@ -129,33 +130,11 @@ def train(config):
                 predictions = np.asarray(predictions).T
                 summaries = [dataset.convert_to_string(pred) for pred in list(predictions)]
 
-                # num_summaries = 1
-                # # get random intial chars
-                # rand_chars = [dataset._char_to_ix[random.choice(dataset._chars)] for i in range(num_summaries)]
-                # # to tensor
-                # prev_pred = torch.Tensor(rand_chars).type(dtype)
-                # prev_pred_one_hot = to_one_hot(prev_pred, dataset.vocab_size, dtype)
-                # predictions = []
-                # for i in range(config.seq_length):
-                #     # batch size 1
-                #     prev_pred_one_hot = torch.unsqueeze(prev_pred_one_hot, 0)
-                #     if i is 0:
-                #         y_pred, hidden = model(prev_pred_one_hot.float())
-                #     else:
-                #         y_pred, hidden = model(prev_pred_one_hot.float(), hidden)
-                #     # get argmax
-                #     y_pred_batch_idx = y_pred.argmax(2).type(dtype)
-                #     # to one hot
-                #     prev_pred_one_hot = to_one_hot(y_pred_batch_idx.flatten(), dataset.vocab_size, dtype)
-                #     predictions.append(y_pred_batch_idx.squeeze().cpu().detach().numpy())
-                # predictions = np.asarray(predictions).T
-                # summaries = [dataset.convert_to_string(predictions)]
-
 
 
                 # write to file
                 with open(config.summary_path+'summary.txt', 'a') as file:
-                    file.write("step {}: {} \n".format(step, '\t'.join(summaries)))
+                    file.write("epoch {}step {}: {} \n".format(epoch, step, '\t'.join(summaries)))
             if step == config.train_steps:
                 # If you receive a PyTorch data-loader error, check this bug report:
                 # https://github.com/pytorch/pytorch/pull/9655
@@ -171,7 +150,7 @@ def train(config):
                 accuracy_prev = accuracy
             # save model
             if step % config.save_every ==0:
-                torch.save(model.state_dict(), config.save_path+'step_{}.pth'.format(step))
+                torch.save(model.state_dict(), config.save_path+'epoch_{}_step_{}.pth'.format(epoch,step))
     print('Done training.')
 
 
