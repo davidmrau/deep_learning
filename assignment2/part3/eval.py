@@ -48,7 +48,7 @@ def eval(config):
     prev_pred = torch.Tensor(rand_chars).type(dtype)
     prev_pred_one_hot = to_one_hot(prev_pred, dataset.vocab_size, dtype)
     predictions = []
-    for i in range(config.seq_length):
+    for i in range(config.sample_length):
         # batch size 1
         prev_pred_one_hot = torch.unsqueeze(prev_pred_one_hot, 1)
         if i is 0:
@@ -68,7 +68,7 @@ def eval(config):
         predictions.append(y_pred_batch_idx.flatten().cpu().detach().numpy())
     predictions = np.asarray(predictions).T
     summaries = [dataset.convert_to_string(pred) for pred in list(predictions)]
-    print("{} \n".format('\t'.join(summaries)))
+    print("{} \n".format('\n'.join(summaries)))
 
 if __name__ == "__main__":
 
@@ -76,8 +76,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
     # Model params
-    parser.add_argument('--txt_file', type=str, required=True, help="Path to a .txt file to train on")
-    parser.add_argument('--temperature', type=float, default=1, help='Temperature for temp sampling method')
+    parser.add_argument('--temperature', type=float, default=0.6, help='Temperature for temp sampling method')
+    parser.add_argument('--sample_length', type=int, default=50, help='Temperature for temp sampling method')
     parser.add_argument('--sampling_method', type=str, default='temp', help="sampling method 'greedy' or 'temp'")
     parser.add_argument('--model_path', type=str, required=True, help="Path of the model")
     parser.add_argument('--seq_length', type=int, default=30, help='Length of an input sequence')
@@ -88,21 +88,11 @@ if __name__ == "__main__":
     parser.add_argument('--batch_size', type=int, default=64, help='Number of examples to process in a batch')
     parser.add_argument('--learning_rate', type=float, default=2e-3, help='Learning rate')
 
-    # It is not necessary to implement the following three params, but it may help training.
-    parser.add_argument('--learning_rate_decay', type=float, default=0.5, help='Learning rate decay fraction')
-    parser.add_argument('--learning_rate_step', type=int, default=500, help='Learning rate step')
     parser.add_argument('--dropout_keep_prob', type=float, default=0.6, help='Dropout keep probability')
-
-    parser.add_argument('--train_steps', type=int, default=1e6, help='Number of training steps')
-    parser.add_argument('--max_norm', type=float, default=5.0, help='--')
 
     # Misc params
     parser.add_argument('--summary_path', type=str, default="./summaries/", help='Output path for summaries')
     parser.add_argument('--dataset_path', type=str,required=True, default="./models/", help='path for dataset')
-    parser.add_argument('--save_path', type=str, default="./models/", help='Output path for models')
-    parser.add_argument('--print_every', type=int, default=10, help='How often to print training progress')
-    parser.add_argument('--sample_every', type=int, default=200, help='How often to sample from the model')
-    parser.add_argument('--save_every', type=int, default=200, help='How often to save the model')
     config = parser.parse_args()
 
     # Train the model
