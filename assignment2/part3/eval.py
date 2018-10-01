@@ -91,7 +91,6 @@ if __name__ == "__main__":
     parser.add_argument('--dropout_keep_prob', type=float, default=0.6, help='Dropout keep probability')
 
     # Misc params
-    parser.add_argument('--summary_path', type=str, default="./summaries/", help='Output path for summaries')
     parser.add_argument('--dataset_path', type=str,required=True, default="./models/", help='path for dataset')
     config = parser.parse_args()
 

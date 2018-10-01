@@ -65,7 +65,9 @@ def train(config):
     accuracy_prev = None
     criterion = torch.nn.CrossEntropyLoss()
     optimizer = torch.optim.RMSprop(model.parameters(), config.learning_rate)
-    epochs = 20
+    epochs = 10
+    losses = []
+    accuracies = []
     lr = config.learning_rate
     for epoch in range(epochs):
         for step, (batch_inputs, batch_targets) in enumerate(data_loader):
@@ -90,13 +92,14 @@ def train(config):
             optimizer.step()
 
             loss = loss.item()
+            losses.append(loss)
             accuracy = np.sum(np.argmax(y_pred_one_hot.cpu().detach().numpy(), axis=1) == batch_targets.cpu().detach().numpy())/batch_targets.shape[0]
+            accuracies.append(accuracy)
             # Just for time measurement
             t2 = time.time()
             examples_per_second = config.batch_size/float(t2-t1)
             config.train_steps = int(config.train_steps)
             if step % config.print_every == 0:
-
                 print("Epoch {} [{}] Train Step {:04d}/{:04d}, Batch Size = {}, Examples/Sec = {:.2f}, "
                      "Accuracy = {:.2f}, Loss = {:.3f}".format(epoch,
                        datetime.now().strftime("%Y-%m-%d %H:%M"), step,
@@ -106,35 +109,35 @@ def train(config):
 
             if step % config.sample_every == 0 :
                 # Generate some sentences by sampling from the model
-            model.eval()
-            print('Evaluating: ')
-            num_summaries = 5
-            # get random intial chars
-            rand_chars = [dataset._char_to_ix[random.choice(dataset._chars)] for i in range(num_summaries)]
-            # to tensor
-            prev_pred = torch.Tensor(rand_chars).type(dtype)
-            prev_pred_one_hot = to_one_hot(prev_pred, dataset.vocab_size, dtype)
-            predictions = []
-            for i in range(config.sample_length):
-                # batch size 1
-                prev_pred_one_hot = torch.unsqueeze(prev_pred_one_hot, 1)
-                if i is 0:
-                    y_pred, hidden = model(prev_pred_one_hot.float())
-                else:
-                    y_pred, hidden = model(prev_pred_one_hot.float(), hidden)
-                # get argmax
-                # Sample from the network as a multinomial distribution
-                if config.sampling_method == 'temp':
-                    output_dist = y_pred.data.div(config.temperature).exp()
-                    y_pred_batch_idx = output_dist.squeeze(1).multinomial(1).type(dtype)
-                else:
-                    y_pred_batch_idx = y_pred.argmax(2).type(dtype)
+                model.eval()
+                print('Evaluating: ')
+                num_summaries = 5
+                # get random intial chars
+                rand_chars = [dataset._char_to_ix[random.choice(dataset._chars)] for i in range(num_summaries)]
+                # to tensor
+                prev_pred = torch.Tensor(rand_chars).type(dtype)
+                prev_pred_one_hot = to_one_hot(prev_pred, dataset.vocab_size, dtype)
+                predictions = []
+                for i in range(config.sample_length):
+                    # batch size 1
+                    prev_pred_one_hot = torch.unsqueeze(prev_pred_one_hot, 1)
+                    if i is 0:
+                        y_pred, hidden = model(prev_pred_one_hot.float())
+                    else:
+                        y_pred, hidden = model(prev_pred_one_hot.float(), hidden)
+                    # get argmax
+                    # Sample from the network as a multinomial distribution
+                    if config.sampling_method == 'temp':
+                        output_dist = y_pred.data.div(config.temperature).exp()
+                        y_pred_batch_idx = output_dist.squeeze(1).multinomial(1).type(dtype)
+                    else:
+                        y_pred_batch_idx = y_pred.argmax(2).type(dtype)
 
-                # to one hot
-                prev_pred_one_hot = to_one_hot(y_pred_batch_idx.flatten(), dataset.vocab_size, dtype)
-                predictions.append(y_pred_batch_idx.flatten().cpu().detach().numpy())
-            predictions = np.asarray(predictions).T
-            summaries = [dataset.convert_to_string(pred) for pred in list(predictions)]
+                    # to one hot
+                    prev_pred_one_hot = to_one_hot(y_pred_batch_idx.flatten(), dataset.vocab_size, dtype)
+                    predictions.append(y_pred_batch_idx.flatten().cpu().detach().numpy())
+                predictions = np.asarray(predictions).T
+                summaries = [dataset.convert_to_string(pred) for pred in list(predictions)]
                 with open(config.summary_path+'summary.txt', 'a') as file:
                     file.write("epoch {}step {}: {} \n".format(epoch, step, '\t'.join(summaries)))
             if step == config.train_steps:
@@ -153,6 +156,8 @@ def train(config):
             # save model
             if step % config.save_every ==0:
                 torch.save(model.state_dict(), config.save_path+'epoch_{}_step_{}.pth'.format(epoch,step))
+    pickle.dump(accuracies, open(config.save_path + 'accuracies.p'))
+    pickle.dump(losses, open(config.save_path + 'losses.p'))
     print('Done training.')
 
 
@@ -175,7 +180,7 @@ if __name__ == "__main__":
     parser.add_argument('--batch_size', type=int, default=64, help='Number of examples to process in a batch')
     parser.add_argument('--learning_rate', type=float, default=2e-3, help='Learning rate')
     parser.add_argument('--sampling_method', type=str, default='temp', help="sampling method 'greedy' or 'temp'")
-    parser.add_argument('--sample_length', type=int, default=50, help='Temperature for temp sampling method')
+    parser.add_argument('--sample_length', type=int, default=30, help='Temperature for temp sampling method')
 
     # It is not necessary to implement the following three params, but it may help training.
     parser.add_argument('--learning_rate_decay', type=float, default=0.5, help='Learning rate decay fraction')
