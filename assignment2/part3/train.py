@@ -28,13 +28,9 @@ import pickle
 import torch
 import torch.optim as optim
 from torch.utils.data import DataLoader
-# original
-# TODO: Change this back
-# from part3.dataset import TextDataset
-# from part3.model import TextGenerationModel
-# changed
-from dataset import TextDataset
-from model import TextGenerationModel
+from part3.dataset import TextDataset
+from part3.model import TextGenerationModel
+
 ################################################################################
 
 def to_one_hot(indices, vocab_size, dtype):
