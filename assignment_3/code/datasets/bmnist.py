@@ -47,9 +47,11 @@ class BMNIST(data.Dataset):
 
     def __getitem__(self, index):
         img = self.data[index]
+
         # doing this so that it is consistent with all other datasets
         # to return a PIL Image
         img = Image.fromarray(img.float().numpy())
+
         if self.transform is not None:
             img = self.transform(img)
 

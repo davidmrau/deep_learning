@@ -1,0 +1,21 @@
+epoch 0step 0: e                             	e                             	e                             	e                             	e                              
+epoch 0step 200: n der der der der der der der 	nder der der der der der der d	er der der der der der der der	en der der der der der der der	en der der der der der der der 
+epoch 1step 0: n der Hungerkuenstler der Hung	en der Hungerkuenstler der Hun	reher der Hungerkuenstler der 	n der Hungerkuenstler der Hung	en der Hungerkuenstler der Hun 
+epoch 1step 200:  den Hungerkuenstler den Hunge	er den Hungerkuenstler den Hun	 Waerden warungen war der Hung	 den Hungerkuenstler den Hunge	einen Hungerkuenstler den Hung 
+epoch 2step 0: er die Waechter der Hungerkuen	n der Hungerkuenstler auf der 	 Dann er nicht nicht nicht ein	enden Hungerkuenstler auf der 	erkuenstler auf der Hungerkuen 
+epoch 2step 200: ht der Hungerkuenstler auch di	ren war der Hungerkuenstler au	ungerkuenstler auch die Waecht	esten war der Hungerkuenstler 	uer den Hungerkuenstler auch d 
+epoch 3step 0: ndere schen war der Hungerkuen	eit der Hungerkuenstler vor de	ufseher, der der Hungerkuenstl	en der Hungerkuenstler vor der	ahren war das ein allei einem  
+epoch 3step 200: en der Hungerkuenstler vor die	enen war das ein allei er nich	r sie er die Staren das Hunger	mpresario ein Tier an dem Grue	eit gescheinen war das Hungern 
+epoch 4step 0: age und un der Hungerkuenstler	ahre das Hungern war, als ein 	er der Hungerkuenstler vor die	er der Hungerkuenstler vor die	ahre das Hungern war, als ein  
+epoch 4step 200:  das Hungern war nur sich hatt	ahre daran geroenten waren, un	euten war der Hungerkuenstler 	nte das Gesenig genn des Aufse	 Er war nicht einmal auch das  
+epoch 5step 0: mpresario ein Standert zur Ein	ielte, die grosse Selbstverleu	amen in die Zusam das Geringer	erkuenstler vor diesen Besuchs	erstaendnis kam das Hungern ha 
+epoch 5step 200: nte der Hungerkuenstler von de	aefig in den Bestrenden Augen 	 Das bleiben sie den Staellen 	e der Hungerkuenstler von der 	troh seinem Anschein wend er v 
+epoch 6step 0:  die Aufmerksamkeit vom Hunger	erkuenstler an einem andern Be	rehen diesen Aufenthung des Sa	r der Hungerkuenstler vor dies	 das Publikum ein Tier eine we 
+epoch 6step 200: r der Hungerkuenstler selbst k	 Wer es nicht aufhaechst einma	r den Hungerkuenstler vor dies	echtig vortretenden Rippen, so	ielleicht war er gar nicht an  
+epoch 7step 0: uenstler vor diesen Besuchszei	 Hungern entsetzlich erst jetz	u sehr, und den war das gesche	ar das geschehen wenig besser 	reiheit mit sich herumwerfen e 
+epoch 7step 200: ngerkuenstler zumindest einmal	on dem der Hungerkuenstler sel	 sich hier handelte, von frueh	aechter dann man ihm seinen Wi	reiheit mit sich herumwerfen z 
+epoch 8step 0: n der Hungerkuenstler vorueber	ufseher der Kaefig auf einer d	e der Hungerkuenstler vorueber	 Die schoenen Aufschriften wur	erstaendnis hin und der Hunger 
+epoch 8step 200: er Hungerkuenstler selbst konn	r war der Hungerkuenstler den 	acht genuegend beachteten eine	r war der Hungerkuenstler den 	 Hungerkuenstler zu bewahren,  
+epoch 9step 0: rer waren ausgehienen war es j	reiheit mit sich herumzutragen	eitenz ihn vorueber, dang es e	 Wer die Seinen verstand. Womi	ar es auch nicht mehr stellen  
+epoch 9step 200:  der Hungerkuenstler selbst ko	rer waren ihm die Waechter, we	uem ansehen wollte, nicht etwa	 sich hier handelte, von frueh	 sich hier handelte, von frueh 
+epoch 10step 0: taellen verlangte. War der gro	eit ein Muessiggaenger stehen 	 dass er weiterhungre. Nun mac	er das gleiche, denn nach den 	er das gleiche, denn nach den  

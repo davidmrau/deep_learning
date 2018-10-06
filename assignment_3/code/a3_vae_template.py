@@ -14,8 +14,8 @@ class Encoder(nn.Module):
 
         self.relu = nn.ReLU()
         self.linear = nn.Linear(784, hidden_dim)
-        self.lin_log_std = nn.Linear(hidden_dim, z_dim*2)
-        self.lin_mean = nn.Linear(hidden_dim, z_dim*2)
+        self.lin_log_std = nn.Linear(hidden_dim, z_dim)
+        self.lin_mean = nn.Linear(hidden_dim, z_dim)
 
     def forward(self, input):
         """
@@ -61,27 +61,25 @@ class VAE(nn.Module):
         self.decoder = Decoder(hidden_dim, z_dim)
 
 
-    def kl_divergence(sigma_1, mu_1, sigma_2, mu_2):
-        return torch.log(np.log(sigma_2)/np.log(sigma_1))+ (sigma_1+(mu_1-mu_2).pow(2))/(2*sigma_2) - (1/2)
 
     def forward(self, input):
         """
         Given input, perform an encoding and decoding step and return the
         negative average elbo for the given batch.
         """
-
-        mean, std = self.encoder(input)
-        sigma = torch.diag(std)
-        univariate_mean = torch.zeros(self.z_dim)
-        univariate_sigma = torch.diag(torch.ones(self.z_dim))
-
-        l_reg = kl_divergence(sigma, mean, univariate_sigma , univariate_mean)
-        rand = torch.from_numpy(np.random.normal(0, 1, size=self.z_dim)).float()
-        epsilons = torch.autograd.Variable(rand, requires_grad=False)
-        z = mean_pred + sigma * epsilons
-        mean = self.decoder(z)
-        l_recon = -input * torch.log(mean) + (1-input) * torch.log(1-mean)
-        average_negative_elbo = (l_reg + l_recon).mean()
+        negative_elbos = torch.zeros(1)
+        for img in input:
+            img = img.view(784)
+            mean, std = self.encoder(img)
+            sigma = torch.diag(std)
+            l_reg = 0.5*(1+torch.log(std.pow(2))-mean.pow(2) - std.pow(2)).sum() 
+            rand = torch.from_numpy(np.random.normal(0, 1, size=self.z_dim)).float()
+            epsilons = torch.autograd.Variable(rand, requires_grad=False)
+            z = mean + sigma * epsilons
+            y = self.decoder(z)
+            l_recon = (-img * torch.log(y) + (1-img) * torch.log(1-y)).mean()
+            negative_elbos += -(l_reg + l_recon)
+        average_negative_elbo = negative_elbos/len(input)
         return average_negative_elbo
 
     def sample(self, n_samples):
@@ -103,14 +101,15 @@ def epoch_iter(model, data, optimizer):
 
     Returns the average elbo for the complete epoch.
     """
-    epoch_elbos = []
+    epoch_elbos = torch.zeros(1)
     for batch in data:
         model.zero_grad()
-        epoch_elbo = model(data)
+        epoch_elbo = model(batch)
+        print(epoch_elbo)
         optimizer.step()
-        average_epoch_elbo.backward()
-        elbo_batch.append(epoch_elbo)
-    average_epoch_elbo = epoch_elbo.mean()
+        epoch_elbo.backward()
+        epoch_elbos += epoch_elbo
+    average_epoch_elbo = epoch_elbo/len(data)
     return average_epoch_elbo
 
 
@@ -151,7 +150,7 @@ def main():
         train_elbo, val_elbo = elbos
         train_curve.append(train_elbo)
         val_curve.append(val_elbo)
-        print(f"[Epoch {epoch}] train elbo: {train_elbo} val_elbo: {val_elbo}")
+        print("[Epoch {}] train elbo: {} val_elbo: {}".format(epoch, train_elbo, val_elbo))
 
         # --------------------------------------------------------------------
         #  Add functionality to plot samples from model during training.
