@@ -6,78 +6,80 @@ import torch.nn as nn
 import torchvision.transforms as transforms
 from torchvision.utils import save_image
 from torchvision import datasets
+import numpy as np
 
 
 class Generator(nn.Module):
-    def __init__(self):
+    def __init__(self, latent_dim):
         super(Generator, self).__init__()
-
-        # Construct generator. You are free to experiment with your model,
-        # but the following is a good start:
-        #   Linear args.latent_dim -> 128
-        #   LeakyReLU(0.2)
-        #   Linear 128 -> 256
-        #   Bnorm
-        #   LeakyReLU(0.2)
-        #   Linear 256 -> 512
-        #   Bnorm
-        #   LeakyReLU(0.2)
-        #   Linear 512 -> 1024
-        #   Bnorm
-        #   LeakyReLU(0.2)
-        #   Linear 1024 -> 768
-        #   Output non-linearity
+        self.layers = nn.Sequential(
+        nn.Linear(latent_dim, 128)
+        nn.LeakyReLU(0.2, True),
+        nn.Linear(128, 256)
+        nn.BatchNorm2d(256),
+        nn.LeakyReLU(0.2, True),
+        nn.Linear(256, 512)
+        nn.BatchNorm2d(512),
+        nn.LeakyReLU(0.2, True),
+        nn.Linear(512, 1024)
+        nn.BatchNorm2d(1024),
+        nn.LeakyReLU(0.2, True),
+        nn.Linear(1024, 784),
+        nn.ReLU(True))
 
     def forward(self, z):
-        # Generate images from z
-        pass
+        return self.layers(z)
 
 
 class Discriminator(nn.Module):
     def __init__(self):
         super(Discriminator, self).__init__()
-
-        # Construct distriminator. You are free to experiment with your model,
-        # but the following is a good start:
-        #   Linear 784 -> 512
-        #   LeakyReLU(0.2)
-        #   Linear 512 -> 256
-        #   LeakyReLU(0.2)
-        #   Linear 256 -> 1
-        #   Output non-linearity
+        self.layers = nn.Sequential(
+        nn.Linear(784, 512)
+        nn.LeakyReLU(0.2, True),
+        nn.Linear(512, 256)
+        nn.LeakyReLU(0.2, True),
+        nn.Linear(256, 1),
+        nn.ReLU(True))
 
     def forward(self, img):
-        # return discriminator score for img
-        pass
+        return self.layers(z)
 
 
-def train(dataloader, discriminator, generator, optimizer_G, optimizer_D):
+def train(dataloader, discriminator, generator, optimizer_G, optimizer_D, latent_dim, batch_size):
     for epoch in range(args.n_epochs):
+        average_v = []
         for i, (imgs, _) in enumerate(dataloader):
 
             imgs.cuda()
 
             # Train Generator
             # ---------------
+            optimizer_G.zero_grad()
+            z = torch.randn_like(batch_size, latent_dim)
+            gen_imgs = generator(z)
+            loss_gen = -(imgs * torch.log(1e-8+y) + (1-imgs) * torch.log(1-y)).sum(1)
+            loss_gen.backward()
+            optimizer_G.step()
 
             # Train Discriminator
             # -------------------
             optimizer_D.zero_grad()
-
+            gen_vals = discriminator(gen_imgs)
+            loss_dis = torch.log(1- gen_vals)
+            loss_dis.backward()
+            optimizer_D.step()
+            average_v.append(loss_gen+loss_dis)
             # Save Images
             # -----------
             batches_done = epoch * len(dataloader) + i
             if batches_done % args.save_interval == 0:
-                # You can use the function save_image(Tensor (shape Bx1x28x28),
-                # filename, number of rows, normalize) to save the generated
-                # images, e.g.:
-                # save_image(gen_imgs[:25],
-                #            'images/{}.png'.format(batches_done),
-                #            nrow=5, normalize=True)
-                pass
+                save_image(gen_imgs[:25].view(batch_size, 1, 28, 28),
+                            'images/{}.png'.format(batches_done),
+                            nrow=5, normalize=True)
 
-
-def main():
+        print('Average min max value in epoch {}: {}'.format(epoch, np.average(average_v)))
+def main(args):
     # Create output image directory
     os.makedirs('images', exist_ok=True)
 
@@ -91,17 +93,17 @@ def main():
         batch_size=args.batch_size, shuffle=True)
 
     # Initialize models and optimizers
-    generator = Generator()
+    generator = Generator(args.latent_dim)
     discriminator = Discriminator()
     optimizer_G = torch.optim.Adam(generator.parameters(), lr=args.lr)
     optimizer_D = torch.optim.Adam(discriminator.parameters(), lr=args.lr)
 
     # Start training
-    train(dataloader, discriminator, generator, optimizer_G, optimizer_D)
+    train(dataloader, discriminator, generator, optimizer_G, optimizer_D, args.latent_dim, args.batch_size)
 
     # You can save your generator here to re-use it to generate images for your
     # report, e.g.:
-    # torch.save(generator.state_dict(), "mnist_generator.pt")
+    torch.save(generator.state_dict(), "mnist_generator.pt")
 
 
 if __name__ == "__main__":
@@ -118,4 +120,4 @@ if __name__ == "__main__":
                         help='save every SAVE_INTERVAL iterations')
     args = parser.parse_args()
 
-    main()
+    main(args)
