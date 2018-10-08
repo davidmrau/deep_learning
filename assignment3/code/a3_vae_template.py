@@ -3,6 +3,7 @@ import argparse
 import torch
 import torch.nn as nn
 import matplotlib.pyplot as plt
+import pickle
 from torchvision.utils import make_grid
 from torchvision.utils import save_image
 
@@ -69,14 +70,14 @@ class VAE(nn.Module):
         negative average elbo for the given batch.
         """
         input = input.view(-1,784)
-        mean, std = self.encoder(input)
-        l_reg = 0.5*(1+torch.log(1e-8+std.pow(2))-mean.pow(2) - std.pow(2)).sum(1)
-        rand = torch.from_numpy(np.random.normal(0, 1, size=(input.shape[0],self.z_dim))).float()
-        epsilons = torch.autograd.Variable(rand, requires_grad=False)
-        z = mean + std * epsilons
+        mu, log_var = self.encoder(input)
+        l_reg = -0.5*(1 + log_var - mu.pow(2) - log_var.exp()).sum(1)
+        std = torch.exp(0.5*log_var)
+        epsilon = torch.randn_like(log_var)
+        z = mu + std * epsilon
         y = self.decoder(z)
-        l_recon = (input * torch.log(y) + (1-input) * torch.log(1-y)).sum(1)
-        average_negative_elbo = -(l_reg.mean() + l_recon.mean())
+        l_recon = -(input * torch.log(1e-8+y) + (1-input) * torch.log(1-y)).sum(1)
+        average_negative_elbo = l_reg.mean() + l_recon.mean()
         return average_negative_elbo
 
     def sample(self, n_samples):
@@ -98,14 +99,14 @@ def epoch_iter(model, data, optimizer):
 
     Returns the average elbo for the complete epoch.
     """
-    epoch_elbos = torch.zeros(1)
+    epoch_elbos = []
     for batch in data:
         optimizer.zero_grad()
         epoch_elbo = model(batch)
         epoch_elbo.backward()
         optimizer.step()
-        epoch_elbos += epoch_elbo.item()
-    average_epoch_elbo = epoch_elbo/len(data)
+        epoch_elbos.append(epoch_elbo.item())
+    average_epoch_elbo = np.mean(epoch_elbos)
     return average_epoch_elbo
 
 
@@ -151,22 +152,25 @@ def main():
         train_elbo, val_elbo = elbos
         train_curve.append(train_elbo)
         val_curve.append(val_elbo)
-        print("[Epoch {}] train elbo: {} val_elbo: {}".format(epoch, train_elbo, val_elbo))
-        
+        print("[Epoch {}] train elbo: {} val_elbo: {}".format(epoch, train_elbo, val_elbo)) 
         # --------------------------------------------------------------------
         #  Add functionality to plot samples from model during training.
         #  You can use the make_grid functioanlity that is already imported.
         # --------------------------------------------------------------------
         
-    #if zdim == 2:
 
-    
+    if ARGS.zdim == 2:
+        n = torch.distributions.Normal(torch.zeros(2), torch.ones(2))
+        latent_variables = [n.icdf(torch.Tensor([x,y])) for x in torch.arange(0.05,1,0.05) for y in torch.arange(0.05,1,0.05)]
+        y = model.decoder(torch.stack(latent_variables))
+        save_image(make_grid(y.view(y.shape[0], 1, 28,28), nrow=19), ARGS.save_path + 'manifold.png')
+        
     # --------------------------------------------------------------------
     #  Add functionality to plot plot the learned data manifold after
     #  if required (i.e., if zdim == 2). You can use the make_grid
     #  functionality that is already imported.
     # --------------------------------------------------------------------
-
+    pickle.dump([train_curve, val_curve], open(ARGS.save_path+'curves.p', 'wb'))
     save_elbo_plot(train_curve, val_curve, ARGS.save_path+'elbo.pdf')
 
     torch.save_state_dict(ARGS.save_path+'model.pth')
