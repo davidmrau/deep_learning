@@ -71,13 +71,13 @@ class VAE(nn.Module):
         """
         input = input.view(-1,784)
         mu, log_var = self.encoder(input)
-        l_reg = -0.5*(1 + log_var - mu.pow(2) - log_var.exp()).sum(1)
+        l_reg = 0.5*(1 + log_var - mu.pow(2) - log_var.exp()).sum(1)
         std = torch.exp(0.5*log_var)
         epsilon = torch.randn_like(log_var)
         z = mu + std * epsilon
         y = self.decoder(z)
-        l_recon = -(input * torch.log(1e-8+y) + (1-input) * torch.log(1-y)).sum(1)
-        average_negative_elbo = l_reg.mean() + l_recon.mean()
+        l_recon = (input * torch.log(1e-8+y) + (1-input) * torch.log(1-y)).sum(1)
+        average_negative_elbo = -(l_reg.mean() + l_recon.mean())
         return average_negative_elbo
 
     def sample(self, n_samples):
