@@ -13,19 +13,19 @@ class Generator(nn.Module):
     def __init__(self, latent_dim):
         super(Generator, self).__init__()
         self.layers = nn.Sequential(
-        nn.Linear(latent_dim, 128)
+        nn.Linear(latent_dim, 128),
         nn.LeakyReLU(0.2, True),
-        nn.Linear(128, 256)
-        nn.BatchNorm2d(256),
+        nn.Linear(128, 256),
+        nn.BatchNorm1d(256),
         nn.LeakyReLU(0.2, True),
-        nn.Linear(256, 512)
-        nn.BatchNorm2d(512),
+        nn.Linear(256, 512),
+        nn.BatchNorm1d(512),
         nn.LeakyReLU(0.2, True),
-        nn.Linear(512, 1024)
-        nn.BatchNorm2d(1024),
+        nn.Linear(512, 1024),
+        nn.BatchNorm1d(1024),
         nn.LeakyReLU(0.2, True),
         nn.Linear(1024, 784),
-        nn.ReLU(True))
+        nn.Tanh())
 
     def forward(self, z):
         return self.layers(z)
@@ -35,50 +35,65 @@ class Discriminator(nn.Module):
     def __init__(self):
         super(Discriminator, self).__init__()
         self.layers = nn.Sequential(
-        nn.Linear(784, 512)
+        nn.Linear(784, 512),
         nn.LeakyReLU(0.2, True),
-        nn.Linear(512, 256)
+        nn.Linear(512, 256),
         nn.LeakyReLU(0.2, True),
         nn.Linear(256, 1),
-        nn.ReLU(True))
+        nn.Sigmoid())
 
     def forward(self, img):
-        return self.layers(z)
+        return self.layers(img)
 
 
-def train(dataloader, discriminator, generator, optimizer_G, optimizer_D, latent_dim, batch_size):
+def train(adversarial_loss, dataloader, discriminator, generator, optimizer_G, optimizer_D, latent_dim):
     for epoch in range(args.n_epochs):
-        average_v = []
         for i, (imgs, _) in enumerate(dataloader):
 
             imgs.cuda()
-
+            imgs = imgs.view(imgs.shape[0], 784)
             # Train Generator
             # ---------------
+            valid = torch.autograd.Variable(torch.zeros(imgs.shape[0],1).uniform_(0.9,1.1), requires_grad=False)
+
             optimizer_G.zero_grad()
-            z = torch.randn_like(batch_size, latent_dim)
+
+            z = torch.autograd.Variable(torch.randn(imgs.shape[0], latent_dim))
+
             gen_imgs = generator(z)
-            loss_gen = -(imgs * torch.log(1e-8+y) + (1-imgs) * torch.log(1-y)).sum(1)
+            dis_vals = discriminator(gen_imgs) 
+            loss_gen = adversarial_loss(dis_vals, valid)
+
+
             loss_gen.backward()
             optimizer_G.step()
 
             # Train Discriminator
             # -------------------
+
+            fake = torch.autograd.Variable(torch.zeros(imgs.shape[0],1).uniform_(0.0,0.2), requires_grad=False)
+
             optimizer_D.zero_grad()
-            gen_vals = discriminator(gen_imgs)
-            loss_dis = torch.log(1- gen_vals)
+
+            valid_vals = discriminator(imgs)
+            real_loss = adversarial_loss(valid_vals, valid)
+            fake_vals = discriminator(gen_imgs.detach())
+            fake_loss = adversarial_loss(fake_vals, fake)
+            loss_dis = (fake_loss + real_loss)/2
+
+
             loss_dis.backward()
             optimizer_D.step()
-            average_v.append(loss_gen+loss_dis)
             # Save Images
             # -----------
             batches_done = epoch * len(dataloader) + i
+            print ("[Epoch %d/%d] [Batch %d/%d] [D loss: %f] [G loss: %f]" % (epoch, args.n_epochs, i, len(dataloader),
+                                                                                    loss_dis.item(), loss_gen.item()))
             if batches_done % args.save_interval == 0:
-                save_image(gen_imgs[:25].view(batch_size, 1, 28, 28),
+                save_image(gen_imgs[:25].view(25, 1, 28, 28),
                             'images/{}.png'.format(batches_done),
                             nrow=5, normalize=True)
 
-        print('Average min max value in epoch {}: {}'.format(epoch, np.average(average_v)))
 def main(args):
     # Create output image directory
     os.makedirs('images', exist_ok=True)
@@ -97,9 +112,10 @@ def main(args):
     discriminator = Discriminator()
     optimizer_G = torch.optim.Adam(generator.parameters(), lr=args.lr)
     optimizer_D = torch.optim.Adam(discriminator.parameters(), lr=args.lr)
-
+    
+    adversarial_loss = torch.nn.BCELoss()
     # Start training
-    train(dataloader, discriminator, generator, optimizer_G, optimizer_D, args.latent_dim, args.batch_size)
+    train(adversarial_loss, dataloader, discriminator, generator, optimizer_G, optimizer_D, args.latent_dim)
 
     # You can save your generator here to re-use it to generate images for your
     # report, e.g.:
