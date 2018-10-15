@@ -61,7 +61,7 @@ def train(adversarial_loss, dataloader, discriminator, generator, optimizer_G, o
             z = torch.autograd.Variable(torch.randn(imgs.shape[0], latent_dim))
 
             gen_imgs = generator(z)
-            dis_vals = discriminator(gen_imgs) 
+            dis_vals = discriminator(gen_imgs)
             loss_gen = adversarial_loss(dis_vals, valid)
 
 
@@ -77,13 +77,16 @@ def train(adversarial_loss, dataloader, discriminator, generator, optimizer_G, o
 
             valid_vals = discriminator(imgs)
             real_loss = adversarial_loss(valid_vals, valid)
+            real_loss.backward(retain_graph=True)
+            optimizer_D.step()
+
+            optimizer_D.zero_grad()
+
             fake_vals = discriminator(gen_imgs.detach())
             fake_loss = adversarial_loss(fake_vals, fake)
-            loss_dis = (fake_loss + real_loss)/2
-
-
-            loss_dis.backward()
+            fake_loss.backward()
             optimizer_D.step()
+
             # Save Images
             # -----------
             batches_done = epoch * len(dataloader) + i
@@ -112,7 +115,7 @@ def main(args):
     discriminator = Discriminator()
     optimizer_G = torch.optim.Adam(generator.parameters(), lr=args.lr)
     optimizer_D = torch.optim.Adam(discriminator.parameters(), lr=args.lr)
-    
+
     adversarial_loss = torch.nn.BCELoss()
     # Start training
     train(adversarial_loss, dataloader, discriminator, generator, optimizer_G, optimizer_D, args.latent_dim)
